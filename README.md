@@ -44,8 +44,9 @@ python debug_news.py
 ```
 🛣️ Roadmap & Future Phases
 
-Phase,Module,Tech Stack,Status
-I,Ingestion Layer,"Python, yFinance, Pandas",✅ Stable
-II,NLP Transformation,"HuggingFace, FinBERT, PyTorch",🔄 In Progress
-III,Persistence Layer,PostgreSQL / SQLite,⏳ Planned
-IV,Visualization Node,"Streamlit, Plotly",⏳ Planned
+| Phase | Module | Tech Stack | Status |
+| :---: | :--- | :--- | :--- |
+| **I** | Ingestion Layer | Python, yFinance, Pandas | ✅ **Stable** |
+| **II** | NLP Transformation | HuggingFace, FinBERT, PyTorch | 🔄 **In Progress** |
+| **III** | Persistence Layer | PostgreSQL / SQLite | ⏳ **Planned** |
+| **IV** | Visualization Node | Streamlit, Plotly | ⏳ **Planned** |
