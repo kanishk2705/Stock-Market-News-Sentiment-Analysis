@@ -1,0 +1,8 @@
+# --- Phase 1: Data Ingestion Core ---
+yfinance>=0.2.36     # The main wrapper for Yahoo Finance API
+pandas>=2.2.0        # For data structuring (DataFrames) and future SQL export
+requests>=2.31.0     # For handling HTTP sessions and connectivity protocols
+lxml>=5.1.0          # High-performance HTML parsing (critical for yfinance scraping)
+
+# --- Utilities ---
+numpy>=1.26.0        # Numerical computing (Dependency for Pandas)
