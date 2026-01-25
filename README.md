@@ -1,10 +1,10 @@
-📂 Market Sentiment Intelligence System
-Project Duration: Jan 2026 - Present
-Built By: A C KANISHK
+# 📂 Market Sentiment Intelligence System
+# Project Duration: Jan 2026 - Present
+# Built By: A C KANISHK
 
-📖 The Evolution Story
+# 📖 The Evolution Story
 
-Phase 1: The Ingestion Layer (The "Body")
+# Phase 1: The Ingestion Layer (The "Body")
 
 Goal: Stop reading news manually. Build a system to fetch it for me.
 
@@ -12,7 +12,7 @@ Goal: Stop reading news manually. Build a system to fetch it for me.
 •	Solution: Built a Python ETL script (fetch_data.py) using yfinance. Implemented custom logic to parse dynamic JSON schemas and normalize currency symbols (₹ vs $) across Indian and US markets.
 •	Result: A console report showing live prices and headlines for a hardcoded portfolio.
 
-Phase 2: The Cognitive Layer (The "Brain")
+# Phase 2: The Cognitive Layer (The "Brain")
 
 Goal: Turn text into math.
 
@@ -20,7 +20,7 @@ Goal: Turn text into math.
 •	Solution: Integrated FinBERT, a Transformer model pre-trained on financial texts. Built a microservice (sentiment_engine.py) that scores headlines with a confidence vector.
 •	Result: The system could correctly identify that a "Trade War" headline was BEARISH for Nvidia, even if the price hadn't moved yet.
 
-Phase 3: The Persistence Layer (The "Memory")
+# Phase 3: The Persistence Layer (The "Memory")
 
 Goal: Solve "Data Amnesia."
 
@@ -28,7 +28,7 @@ Goal: Solve "Data Amnesia."
 •	Solution: Architected a SQL database schema.
 o	Evolution: Started with local SQLite for rapid prototyping.
 
-Phase 4: The Interface (The "Face")
+# Phase 4: The Interface (The "Face")
 
 Goal: Make it usable for non-engineers.
 
@@ -37,7 +37,7 @@ Goal: Make it usable for non-engineers.
 o	Features: Interactive Charts (Plotly).
 o	Tech: Dual-Axis graphing to visualize Price vs. Sentiment correlation.
 
-Drawbacks:
+# Drawbacks:
 
 1. Hardcoded Portfolio: The system supports only a static portfolio, whereas real-world users expect personalized portfolios.
 2. Manual Database Updates: The database requires frequent manual updates, making maintenance inefficient.
