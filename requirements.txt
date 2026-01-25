@@ -1,5 +1,19 @@
 yfinance
 pandas
+numpy
 requests
 lxml
-numpy
+
+# NLP / Sentiment Analysis
+torch
+transformers
+scipy
+
+# Dashboard & Visualization
+streamlit
+plotly
+
+# Database (SQLite is built-in, so no sqlite3 needed)
+
+# Optional (recommended for production)
+python-dotenv
