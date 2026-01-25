@@ -1,52 +1,47 @@
-# 🏦 Market Sentiment Intelligence Pipeline
-### Phase 1: Ingestion Microservice
+📂 Market Sentiment Intelligence System
+Project Duration: Jan 2026 - Present
+Built By: A C KANISHK
 
-> **Architecture Status:** `v0.1.0-alpha` (Ingestion Layer Stable)  
-> **System Latency:** ~1.2s per fetch cycle  
-> **Data Integrity:** Schema-Validated JSON Parsing
+📖 The Evolution Story
 
----
+Phase 1: The Ingestion Layer (The "Body")
 
-## 🏗️ System Architecture
-This project is not just a stock tracker; it is an **Automated ETL (Extract, Transform, Load) Pipeline** designed to quantify the correlation between unstructured news data and financial asset performance.
+Goal: Stop reading news manually. Build a system to fetch it for me.
 
-**Current Module: `Ingestion Node`**
-Responsible for establishing fault-tolerant connections to global financial data providers, normalizing multi-currency assets, and handling proprietary API schema changes dynamically.
+•	Challenge: Financial data is scattered. Yahoo Finance API structure is unstable (nested JSONs).
+•	Solution: Built a Python ETL script (fetch_data.py) using yfinance. Implemented custom logic to parse dynamic JSON schemas and normalize currency symbols (₹ vs $) across Indian and US markets.
+•	Result: A console report showing live prices and headlines for a hardcoded portfolio.
 
-```mermaid
-graph LR
-    A[Global Markets] -->|Raw JSON| B(Ingestion Script);
-    B -->|Schema Validation| C{Data Cleaner};
-    C -->|Success| D[Structured Data Object];
-    C -->|Failure| E[Error Log & Isolation];
-    D -->|Export| F[Pandas DataFrame];
-```
-📊 Sample Output
+Phase 2: The Cognitive Layer (The "Brain")
 
-The script generates a real-time console report and prepares a DataFrame for the next phase.
-![Phase 1 Demo](assets/phase_1_demo.png)
+Goal: Turn text into math.
 
-🛠️ Operational Commands
+•	Challenge: Standard sentiment models fail in finance (e.g., "Cost cutting" is good for stocks, but bad in general English).
+•	Solution: Integrated FinBERT, a Transformer model pre-trained on financial texts. Built a microservice (sentiment_engine.py) that scores headlines with a confidence vector.
+•	Result: The system could correctly identify that a "Trade War" headline was BEARISH for Nvidia, even if the price hadn't moved yet.
 
-1. Deployment (Local)
-```
-# Clone & Install Dependencies
-git clone [https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git](https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git)
-pip install -r requirements.txt
-```
-2. Execution (Ingestion Layer)
-```
-python fetch_data.py
-```
-3. Diagnostics If the upstream API changes, run the inspector tool to reverse-engineer the new payload:
-```
-python debug_news.py
-```
-🛣️ Roadmap & Future Phases
+Phase 3: The Persistence Layer (The "Memory")
 
-| Phase | Module | Tech Stack | Status |
-| :---: | :--- | :--- | :--- |
-| **I** | Ingestion Layer | Python, yFinance, Pandas | ✅ **Stable** |
-| **II** | NLP Transformation | HuggingFace, FinBERT, PyTorch | 🔄 **In Progress** |
-| **III** | Persistence Layer | PostgreSQL / SQLite | ⏳ **Planned** |
-| **IV** | Visualization Node | Streamlit, Plotly | ⏳ **Planned** |
+Goal: Solve "Data Amnesia."
+
+•	Challenge: Scripts forget data when they stop. We needed historical context.
+•	Solution: Architected a SQL database schema.
+o	Evolution: Started with local SQLite for rapid prototyping.
+
+Phase 4: The Interface (The "Face")
+
+Goal: Make it usable for non-engineers.
+
+•	Challenge: Terminal logs are hard to read.
+•	Solution: Built a Streamlit Dashboard (app.py).
+o	Features: Interactive Charts (Plotly).
+o	Tech: Dual-Axis graphing to visualize Price vs. Sentiment correlation.
+
+Drawbacks:
+
+1. Hardcoded Portfolio: The system supports only a static portfolio, whereas real-world users expect personalized portfolios.
+2. Manual Database Updates: The database requires frequent manual updates, making maintenance inefficient.
+3. No Email Alert System: There is no automated email notification mechanism to alert users about important market events.
+4. Limited Sentiment Analysis: Market sentiment is derived only from the latest headline, which can lead to unreliable or risky conclusions.
+5. Local Database Usage: The application relies on a local SQLite database, limiting scalability and concurrent access.
+6. No Future Prediction Capability: The system does not provide any predictive insights or future market trend forecasting.
