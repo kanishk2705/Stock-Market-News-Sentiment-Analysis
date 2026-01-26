@@ -1,109 +1,109 @@
-# 📂 Market Sentiment Intelligence System
+# 🤖 Market Sentiment Intelligence System
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![FinBERT](https://img.shields.io/badge/AI-FinBERT-yellow?style=for-the-badge)
 
 **Project Duration:** Jan 2026 – Present  
 **Built By:** A C KANISHK  
 
+> **A Cloud-Native Financial Intelligence Platform that quantifies market sentiment using NLP and visualizes its impact on stock prices in real-time.**
+
 ---
 
-## 📖 The Evolution Story
+## 📖 The Engineering Evolution
 
 ### 🔹 Phase 1: The Ingestion Layer (The "Body")
-
-**Goal:**  
-Stop reading financial news manually by automating data collection.
-
-**Challenges:**  
-- Financial data is scattered across multiple sources  
-- Yahoo Finance API structure is unstable due to deeply nested JSON responses  
-
-**Solution:**  
-- Developed a Python ETL script (`fetch_data.py`) using **yfinance**  
-- Implemented custom parsing logic to handle dynamic JSON schemas  
-- Normalized currency symbols (₹ vs $) across Indian and US markets  
-
-**Result:**  
-- Generated a console-based report displaying live stock prices and headlines for a **hardcoded portfolio**
-
----
+**Goal:** Stop reading financial news manually by automating data collection.
+* **Challenge:** Financial data is scattered; APIs like Yahoo Finance have unstable, deep JSON structures.
+* **Solution:** Built a robust ETL script (`fetch_data.py`) with custom parsing logic to normalize multi-currency assets (₹ for NSE, $ for NYSE) dynamically.
+* **Current State:** The system now fetches data **dynamically** based on user watchlists, moving away from hardcoded portfolios.
 
 ### 🔹 Phase 2: The Cognitive Layer (The "Brain")
-
-**Goal:**  
-Convert financial text into quantitative insights.
-
-**Challenges:**  
-- Generic sentiment models fail in financial contexts  
-  - Example: *“Cost cutting”* is negative in general English but positive for stock performance  
-
-**Solution:**  
-- Integrated **FinBERT**, a Transformer model pre-trained on financial text  
-- Built a microservice (`sentiment_engine.py`) to score headlines using confidence vectors  
-
-**Result:**  
-- Successfully identified *bearish sentiment* from a “Trade War” headline for **NVIDIA**, even before price movement occurred  
-
----
+**Goal:** Convert financial text into quantitative insights.
+* **Challenge:** Generic sentiment models fail in finance (e.g., *"Cost cutting"* is positive for stocks but negative in general English).
+* **Solution:** Integrated **FinBERT**, a Transformer model pre-trained on financial texts.
+* **Result:** The system calculates a "Confidence Score" (0-1) for every headline to distinguish between weak rumors and strong market signals.
 
 ### 🔹 Phase 3: The Persistence Layer (The "Memory")
-
-**Goal:**  
-Eliminate data loss and enable historical analysis.
-
-**Challenges:**  
-- Script-based execution leads to loss of historical data after runtime  
-
-**Solution:**  
-- Designed and implemented a structured **SQL database schema**  
-- **Evolution:** Started with **SQLite** for rapid prototyping and testing  
-
----
+**Goal:** Eliminate data loss and enable historical analysis.
+* **Challenge:** Local scripts lose data when stopped. SQLite locks files during concurrent writes.
+* **Solution:** Migrated from a local file-based DB to a **Hosted Cloud Database (PostgreSQL via Supabase)**.
+* **Impact:** Supports concurrent users and keeps data safe 24/7, independent of the application state.
 
 ### 🔹 Phase 4: The Interface (The "Face")
-
-**Goal:**  
-Make the system usable for non-technical users.
-
-**Challenges:**  
-- Terminal-based logs are difficult to interpret  
-
-**Solution:**  
-- Developed a **Streamlit dashboard** (`app.py`)  
-
-**Features:**  
-- Interactive visualizations using **Plotly**  
-- Dual-axis graphs showing **Stock Price vs. Sentiment Correlation**
+**Goal:** Make the system usable for non-technical users.
+* **Solution:** Developed an interactive **Streamlit Dashboard** (`app.py`).
+* **New Features:**
+    * **User Profiles:** Dynamic login to manage personal watchlists.
+    * **Real-time Charts:** Dual-axis plotting of Stock Price vs. Sentiment Intensity using **Plotly**.
+    * **Cloud Connectivity:** Direct connection to the Supabase backend.
 
 ---
 
-## ⚠️ Drawbacks
+## 🛠️ Tech Stack
 
-1. **Hardcoded Portfolio**  
-   - The system currently supports only a static portfolio, whereas real-world users expect personalized portfolios.
-
-2. **Manual Database Updates**  
-   - Database maintenance requires manual intervention, reducing scalability and automation.
-
-3. **No Email Alert System**  
-   - Lacks automated email notifications for critical market events or sentiment changes.
-
-4. **Limited Sentiment Scope**  
-   - Market sentiment is inferred only from the latest headline, which may lead to unreliable conclusions.
-
-5. **Local Database Usage**  
-   - Reliance on SQLite limits concurrent access and production-level scalability.
-
-6. **No Future Prediction Capability**  
-   - The system focuses on analysis and does not include predictive or forecasting models.
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Language** | Python 3.10 | Core logic and scripting |
+| **Frontend** | Streamlit | Interactive web dashboard |
+| **Database** | PostgreSQL (Supabase) | Cloud-hosted relational database |
+| **AI Model** | FinBERT (Hugging Face) | Financial Sentiment Analysis (NLP) |
+| **Data Source** | yfinance | Real-time market data API |
+| **Visualization** | Plotly | Interactive financial charting |
 
 ---
 
-## 🚀 Future Enhancements (Planned)
+## ⚠️ Current Limitations (To Be Addressed)
 
-- User-specific dynamic portfolios  
-- Automated ETL scheduling  
-- Email and push notification system  
-- Aggregated multi-headline sentiment analysis  
-- Migration to cloud-based databases (PostgreSQL)  
-- Time-series forecasting and predictive modeling  
+Although the system has moved to the Cloud, the following areas are under active development:
+
+1.  **Manual Triggering:** * The "Robot" (`main.py`) still requires manual execution to fetch daily data. (Automation via GitHub Actions is the next milestone).
+2.  **No "Push" Alerts:** * Users must visit the dashboard to see risks; the system does not yet send emails/SMS for critical sentiment drops.
+3.  **Snapshot Analysis:** * Currently analyzes the *latest* headline. Planned upgrade to "Batch Analysis" (Top 5 headlines) for better accuracy.
+4.  **No Predictive Modeling:** * The system analyzes the *present* but does not yet forecast *future* prices using regression/LSTM.
+
+---
+
+## 🚀 Roadmap & Future Enhancements
+
+- [x] **Dynamic Portfolios** (Users can add/remove stocks) ✅ *Completed*
+- [x] **Cloud Database Migration** (SQLite → PostgreSQL) ✅ *Completed*
+- [ ] **Automated Cron Jobs:** Deploying GitHub Actions for 24/7 autonomous data fetching.
+- [ ] **Predictive Engine:** Implementing Linear Regression/LSTM to forecast next-day prices.
+- [ ] **Alert System:** Email notifications for high-confidence bearish signals.
+
+---
+
+## ⚙️ How to Run Locally
+
+1.  **Clone the Repo**
+    ```bash
+    git clone [https://github.com/YOUR_USERNAME/market-sentinel.git](https://github.com/YOUR_USERNAME/market-sentinel.git)
+    cd market-sentinel
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Configure Secrets**
+    Create a `.env` file in the root directory:
+    ```ini
+    DATABASE_URL="postgresql://postgres.[USER]:[PASSWORD]@[aws-0-ap-south-1.pooler.supabase.com:6543/postgres](https://aws-0-ap-south-1.pooler.supabase.com:6543/postgres)"
+    ```
+
+4.  **Initialize Database**
+    ```bash
+    python database.py
+    ```
+
+5.  **Run the Dashboard**
+    ```bash
+    streamlit run app.py
+    ```
 
 ---
