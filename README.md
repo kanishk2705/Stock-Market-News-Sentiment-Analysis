@@ -82,7 +82,7 @@ Although the system has moved to the Cloud, the following areas are under active
 1.  **Clone the Repo**
     ```bash
     git clone [https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git](https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git)
-    cd market-sentinel
+    cd Stock-Market-News-Sentiment-Analysis
     ```
 
 2.  **Install Dependencies**
