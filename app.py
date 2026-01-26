@@ -1,90 +1,116 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
+import os
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text # <-- NEW IMPORT
+from database import add_ticker, get_user_watchlist
 
-# 1. PAGE CONFIG
-st.set_page_config(page_title="Market Intelligence", layout="wide")
+# 0. CONFIG & SECRETS
+st.set_page_config(page_title="Market Sentinel", layout="wide")
+load_dotenv()
+
+# --- DATABASE ENGINE (SQLAlchemy) ---
+# This creates a robust connection pool (better than raw psycopg2)
+def get_engine():
+    try:
+        # We need to ensure the URL starts with postgresql://
+        db_url = os.getenv("DATABASE_URL")
+        if db_url and db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        return create_engine(db_url)
+    except Exception as e:
+        st.error(f"❌ Connection Failed: {e}")
+        return None
+
+# --- SIDEBAR: USER PROFILE & WATCHLIST ---
 st.title("🤖 AI-Powered Market Sentinel")
+st.sidebar.header("👤 User Profile")
+user_id = st.sidebar.text_input("Enter Username", value="guest").lower().strip()
 
-# 2. LOAD DATA FROM DB
-def load_data():
-    conn = sqlite3.connect("finance.db")
-    # Get all data sorted by time
-    df = pd.read_sql("SELECT * FROM market_log ORDER BY timestamp ASC", conn)
-    conn.close()
-    return df
+st.sidebar.subheader("Manage Watchlist")
+new_ticker = st.sidebar.text_input("Add Stock Ticker (e.g. NVDA, ^NSEI)")
 
-df = load_data()
+if st.sidebar.button("➕ Add to Watchlist"):
+    if new_ticker:
+        if add_ticker(user_id, new_ticker):
+            st.sidebar.success(f"Tracked {new_ticker}!")
+            st.rerun()
+        else:
+            st.sidebar.warning("Could not add ticker.")
+    else:
+        st.sidebar.error("Please enter a symbol.")
 
-# 3. SIDEBAR: Select Stock
-if not df.empty:
-    # Get unique list of tickers
-    ticker_list = df['ticker'].unique().tolist()
-    selected_ticker = st.sidebar.selectbox("Select Asset", ticker_list)
+# --- MAIN DASHBOARD LOGIC ---
+user_tickers = get_user_watchlist(user_id)
 
-    # Filter data for that ticker
-    stock_data = df[df['ticker'] == selected_ticker]
-    
-    # 4. METRICS (Top Row)
-    # Get the very latest record
-    latest_record = stock_data.iloc[-1]
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Latest Price", f"{latest_record['price']:.2f}")
-    col2.metric("AI Sentiment", latest_record['sentiment'].upper(), 
-                delta=f"{latest_record['confidence']:.2f} conf")
-    col3.write(f"**Latest Headline:**\n_{latest_record['headline']}_")
-
-    # 5. VISUALIZATION (Price vs Sentiment)
-    st.subheader(f"📉 {selected_ticker} Performance Analysis")
-    
-    # Create a chart with 2 Y-axes (Price on left, Sentiment on right)
-    fig = go.Figure()
-
-    # Line 1: Stock Price
-    fig.add_trace(go.Scatter(
-        x=stock_data['timestamp'], 
-        y=stock_data['price'],
-        name="Stock Price",
-        line=dict(color='blue', width=2)
-    ))
-
-    # Line 2: Sentiment Score (We map 'positive' to 1, 'negative' to -1)
-    # Helper to convert text to number for plotting
-    def sentiment_to_score(row):
-        if row['sentiment'] == 'positive': return row['confidence']
-        if row['sentiment'] == 'negative': return -row['confidence']
-        return 0
-    
-    stock_data['sentiment_score'] = stock_data.apply(sentiment_to_score, axis=1)
-
-    fig.add_trace(go.Bar(
-        x=stock_data['timestamp'], 
-        y=stock_data['sentiment_score'],
-        name="Sentiment Strength",
-        yaxis="y2",
-        marker_color=stock_data['sentiment_score'].apply(lambda x: 'green' if x > 0 else 'red'),
-        opacity=0.3
-    ))
-
-    # Layout for Double Axis
-    fig.update_layout(
-        yaxis=dict(title="Price"),
-        yaxis2=dict(title="Sentiment Score (-1 to +1)", overlaying="y", side="right"),
-        hovermode="x unified"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Show Raw Data Table
-    st.caption("Raw Data Log")
-    st.dataframe(stock_data[['timestamp', 'price', 'sentiment', 'confidence', 'headline']].sort_values(by='timestamp', ascending=False))
-
+if not user_tickers:
+    st.info(f"👋 Hi {user_id}! Your watchlist is empty. Add a stock in the sidebar to start tracking.")
 else:
-    st.warning("⚠️ Database is empty. Run 'main.py' to fetch data first.")
+    engine = get_engine()
+    if engine:
+        # SQLAlchemy requires named parameters (smarter security)
+        # We fetch ALL logs for the user's tickers
+        if len(user_tickers) == 1:
+            query = text("SELECT * FROM market_log WHERE ticker = :ticker ORDER BY timestamp ASC")
+            params = {"ticker": user_tickers[0]}
+        else:
+            query = text("SELECT * FROM market_log WHERE ticker IN :tickers ORDER BY timestamp ASC")
+            params = {"tickers": tuple(user_tickers)}
+            
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn, params=params)
 
-# 6. REFRESH BUTTON
-if st.sidebar.button("🔄 Refresh Data"):
-    st.rerun()
+        if not df.empty:
+            selected_ticker = st.selectbox("Select Asset to Analyze", user_tickers)
+            stock_data = df[df['ticker'] == selected_ticker]
+            
+            if not stock_data.empty:
+                latest = stock_data.iloc[-1]
+                
+                # Metrics Colors
+                sent_color = "normal"
+                if latest['sentiment'] == 'positive': sent_color = "off"
+                elif latest['sentiment'] == 'negative': sent_color = "inverse"
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Current Price", f"{latest['price']:,.2f}")
+                c2.metric("AI Sentiment", latest['sentiment'].upper(), 
+                          f"{latest['confidence']:.2f} conf", delta_color=sent_color)
+                c3.markdown(f"**Latest News:**\n_{latest['headline']}_")
+
+                # Chart
+                st.subheader(f"📉 {selected_ticker} Performance")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['price'], name="Price", line=dict(color='#2962FF', width=3)))
+                
+                # Visual Score
+                def get_visual_score(row):
+                    val = row['confidence']
+                    return val if row['sentiment'] == 'positive' else -val if row['sentiment'] == 'negative' else 0
+
+                stock_data['visual_score'] = stock_data.apply(get_visual_score, axis=1)
+                
+                fig.add_trace(go.Bar(
+                    x=stock_data['timestamp'],
+                    y=stock_data['visual_score'],
+                    name="Sentiment Strength",
+                    yaxis="y2",
+                    marker_color=stock_data['visual_score'].apply(lambda x: '#00C853' if x > 0 else '#D50000'),
+                    opacity=0.4
+                ))
+
+                fig.update_layout(
+                    template="plotly_dark",
+                    yaxis=dict(title="Stock Price"),
+                    yaxis2=dict(title="AI Confidence", overlaying="y", side="right", range=[-1.1, 1.1]),
+                    hovermode="x unified"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                with st.expander("📂 View Historical Data Logs"):
+                    st.dataframe(stock_data.sort_values(by='timestamp', ascending=False))
+            else:
+                st.warning(f"You track {selected_ticker}, but no data fetched yet. Run 'main.py'!")
+        else:
+            st.warning("No data in cloud DB. Run 'main.py'!")
