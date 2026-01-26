@@ -1,66 +1,119 @@
-import sqlite3
-from datetime import datetime
+import os
+import psycopg2
+from dotenv import load_dotenv
 
-DB_NAME = "finance.db"
+# Load the secret password from .env file
+load_dotenv()
+DB_URL = os.getenv("DATABASE_URL")
+
+def get_db_connection():
+    """Establishes a connection to the Cloud Postgres DB."""
+    try:
+        # We need to ensure we are using the 'postgres' database
+        conn = psycopg2.connect(DB_URL, sslmode='require')
+        return conn
+    except Exception as e:
+        print(f"❌ Database Connection Failed: {e}")
+        return None
 
 def init_db():
-    """Creates the database table if it doesn't exist."""
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
+    if not conn: return
+    
     cursor = conn.cursor()
     
-    # Create a table to store history
-    # We store: Date, Ticker, Price, Sentiment Label, and Confidence Score
+    # 1. LOG TABLE
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS market_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
+            id SERIAL PRIMARY KEY,
+            timestamp TIMESTAMP,
             ticker TEXT,
             price REAL,
             headline TEXT,
             sentiment TEXT,
             confidence REAL
-        )
+        );
+    ''')
+
+    # 2. WATCHLIST TABLE
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS watchlist (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT,
+            ticker TEXT,
+            UNIQUE(user_id, ticker)
+        );
     ''')
     
     conn.commit()
+    cursor.close()
     conn.close()
-    print("✅ Database initialized (finance.db)")
+    print("✅ Cloud Database Connected & Schema Verified")
 
-def save_log(data_list):
-    """Saves a list of enriched stock data to the database."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+# --- WATCHLIST FUNCTIONS ---
+def add_ticker(user_id, ticker):
+    conn = get_db_connection()
+    if not conn: return False
     
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor = conn.cursor()
+    clean_ticker = ticker.upper().strip()
+    
+    try:
+        cursor.execute("INSERT INTO watchlist (user_id, ticker) VALUES (%s, %s)", (user_id, clean_ticker))
+        conn.commit()
+        print(f"✅ Added {clean_ticker} for {user_id}")
+        return True
+    except psycopg2.IntegrityError:
+        conn.rollback() # Reset connection state
+        print(f"⚠️ {clean_ticker} is already in {user_id}'s list.")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_user_watchlist(user_id):
+    conn = get_db_connection()
+    if not conn: return []
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT ticker FROM watchlist WHERE user_id = %s", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
+def get_all_monitored_tickers():
+    conn = get_db_connection()
+    if not conn: return []
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT ticker FROM watchlist")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
+# --- LOGGING FUNCTIONS ---
+def save_log(data_list):
+    conn = get_db_connection()
+    if not conn: return
+    
+    cursor = conn.cursor()
     
     count = 0
     for item in data_list:
-        cursor.execute('''
-            INSERT INTO market_log (timestamp, ticker, price, headline, sentiment, confidence)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            current_time, 
-            item['Ticker'], 
-            item['Price'], 
-            item['Headline'], 
-            item['Sentiment'], 
-            item['Confidence']
-        ))
-        count += 1
-        
+        try:
+            # Postgres needs standard python datetime or string
+            cursor.execute('''
+                INSERT INTO market_log (timestamp, ticker, price, headline, sentiment, confidence)
+                VALUES (NOW(), %s, %s, %s, %s, %s)
+            ''', (item['Ticker'], item['Price'], item['Headline'], item['Sentiment'], item['Confidence']))
+            count += 1
+        except Exception as e:
+            print(f"⚠️ Error saving {item['Ticker']}: {e}")
+            
     conn.commit()
+    cursor.close()
     conn.close()
-    print(f"💾 Saved {count} records to Database.")
-
-def fetch_history(ticker):
-    """(Optional) Retrieve history for a specific stock."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT timestamp, price, sentiment FROM market_log WHERE ticker = ? ORDER BY timestamp DESC", (ticker,))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    print(f"💾 Cloud Persistence: Saved {count} records to Postgres.")
 
 if __name__ == "__main__":
     init_db()
