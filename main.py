@@ -1,20 +1,26 @@
 import pandas as pd
 from fetch_data import fetch_portfolio_data
 from sentiment_engine import analyze_headline
-from database import init_db, save_log  # <-- IMPORTED DB TOOLS
+from database import init_db, save_log
 
 def run_market_intelligence():
-    print("🚀 STARTING MARKET INTELLIGENCE SYSTEM...\n")
+    print("🚀 STARTING MARKET INTELLIGENCE SYSTEM (CLOUD EDITION)...\n")
     
-    # 0. ENSURE DB EXISTS
+    # 1. INITIALIZE CLOUD DB
     init_db()
 
-    # 1. FETCH RAW DATA
+    # 2. FETCH RAW DATA
+    # This will now look at your Supabase 'watchlist' table
     print("--- 📡 PHASE 1: INGESTING LIVE DATA ---")
     raw_data = fetch_portfolio_data()
+    
+    if not raw_data:
+        print("❌ Process Aborted: Watchlist is empty.")
+        return
+
     print(f"✅ Ingestion Complete. Fetched {len(raw_data)} assets.\n")
 
-    # 2. APPLY AI SENTIMENT ANALYSIS
+    # 3. APPLY AI SENTIMENT ANALYSIS
     print("--- 🧠 PHASE 2: RUNNING SENTIMENT INTELLIGENCE ---")
     enriched_data = []
 
@@ -36,11 +42,11 @@ def run_market_intelligence():
         
         print(f"🤖 Analyzed {ticker}: {label.upper()} ({score:.2f})")
 
-    # 3. SAVE TO DATABASE (PHASE 3)
-    print("\n--- 💾 PHASE 3: DATA PERSISTENCE ---")
+    # 4. SAVE TO CLOUD DATABASE
+    print("\n--- 💾 PHASE 3: CLOUD PERSISTENCE ---")
     save_log(enriched_data)
 
-    # 4. DISPLAY SUMMARY
+    # 5. DISPLAY SUMMARY
     print("\n--- 📊 FINAL MARKET REPORT ---")
     df = pd.DataFrame(enriched_data)
     if not df.empty:
