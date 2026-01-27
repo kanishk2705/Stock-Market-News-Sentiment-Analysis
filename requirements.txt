@@ -17,3 +17,4 @@ plotly
 psycopg2-binary
 # Optional (recommended for production)
 python-dotenv
+sqlalchemy
