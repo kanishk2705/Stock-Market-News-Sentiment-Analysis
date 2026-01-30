@@ -68,23 +68,55 @@ else:
             if not stock_data.empty:
                 latest = stock_data.iloc[-1]
                 
-                # Metrics Colors
+                # --- NEW: PREDICTION MODULE ---
+                from prediction_engine import predict_next_day_price
+                
+                # Calculate Prediction
+                predicted_price, signal = predict_next_day_price(selected_ticker, stock_data)
+
+                # --- METRICS ROW ---
+                c1, c2, c3, c4 = st.columns(4) # Changed to 4 columns
+                
+                c1.metric("Current Price", f"{latest['price']:,.2f}")
+                
+                # Sentiment Color Logic
                 sent_color = "normal"
                 if latest['sentiment'] == 'positive': sent_color = "off"
                 elif latest['sentiment'] == 'negative': sent_color = "inverse"
-
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Current Price", f"{latest['price']:,.2f}")
-                c2.metric("AI Sentiment", latest['sentiment'].upper(), 
-                          f"{latest['confidence']:.2f} conf", delta_color=sent_color)
+                
+                c2.metric("AI Sentiment", latest['sentiment'].upper(), f"{latest['confidence']:.2f} conf", delta_color=sent_color)
+                
                 c3.markdown(f"**Latest News:**\n_{latest['headline']}_")
+                
+                # Prediction Metric (Only shows if we have enough data)
+                if predicted_price:
+                    delta = predicted_price - latest['price']
+                    c4.metric("AI Forecast (24h)", f"{predicted_price:,.2f}", signal)
+                else:
+                    c4.metric("AI Forecast", "Waiting for Data", "Need 5 Days History", delta_color="off")
 
-                # Chart
+                # --- CHART ---
                 st.subheader(f"📉 {selected_ticker} Performance")
                 fig = go.Figure()
+                
+                # 1. Historical Price Line
                 fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['price'], name="Price", line=dict(color='#2962FF', width=3)))
                 
-                # Visual Score
+                # 2. Prediction Dot (The Future)
+                if predicted_price:
+                    last_time = stock_data['timestamp'].max()
+                    # Add 1 day to the last timestamp
+                    future_time = last_time + pd.Timedelta(days=1)
+                    
+                    fig.add_trace(go.Scatter(
+                        x=[last_time, future_time], 
+                        y=[latest['price'], predicted_price],
+                        name="AI Forecast",
+                        line=dict(color='#FFD700', width=2, dash='dot'),
+                        marker=dict(size=8, symbol='star')
+                    ))
+
+                # 3. Sentiment Bars
                 def get_visual_score(row):
                     val = row['confidence']
                     return val if row['sentiment'] == 'positive' else -val if row['sentiment'] == 'negative' else 0
@@ -104,10 +136,12 @@ else:
                     template="plotly_dark",
                     yaxis=dict(title="Stock Price"),
                     yaxis2=dict(title="AI Confidence", overlaying="y", side="right", range=[-1.1, 1.1]),
-                    hovermode="x unified"
+                    hovermode="x unified",
+                    legend=dict(orientation="h", y=1.1)
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
+                # ... table code remains the same ...
                 with st.expander("📂 View Historical Data Logs"):
                     st.dataframe(stock_data.sort_values(by='timestamp', ascending=False))
             else:
