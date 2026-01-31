@@ -72,8 +72,8 @@ Although the system has moved to the Cloud, the following areas are under active
 - [x] **Dynamic Portfolios** (Users can add/remove stocks) ✅ *Completed*
 - [x] **Cloud Database Migration** (SQLite → PostgreSQL) ✅ *Completed*
 - [x] **Automated Cron Jobs:** Deploying GitHub Actions for 24/7 autonomous data fetching. ✅ *Completed*
-- [x] **Predictive Engine:** Implementing Linear Regression/LSTM to forecast next-day prices.
-- [x] **Alert System:** Email notifications for high-confidence bearish signals.
+- [x] **Predictive Engine:** Implementing Linear Regression/LSTM to forecast next-day prices. ✅ *Completed*
+- [x] **Alert System:** Email notifications for high-confidence bearish signals. ✅ *Completed*
 
 ---
 
