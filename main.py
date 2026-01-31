@@ -2,6 +2,7 @@ import pandas as pd
 from fetch_data import fetch_portfolio_data
 from sentiment_engine import analyze_headline
 from database import init_db, save_log
+from alert_system import send_market_alert
 
 def run_market_intelligence():
     print("🚀 STARTING MARKET INTELLIGENCE SYSTEM (CLOUD EDITION)...\n")
@@ -46,7 +47,11 @@ def run_market_intelligence():
     print("\n--- 💾 PHASE 3: CLOUD PERSISTENCE ---")
     save_log(enriched_data)
 
-    # 5. DISPLAY SUMMARY
+    # 5. ALERTING SYSTEM (PHASE 7)
+    print("\n--- 🔔 PHASE 4: ALERTING SYSTEM ---")
+    send_market_alert(enriched_data)
+
+    # 6. DISPLAY SUMMARY
     print("\n--- 📊 FINAL MARKET REPORT ---")
     df = pd.DataFrame(enriched_data)
     if not df.empty:
