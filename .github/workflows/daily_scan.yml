@@ -34,5 +34,7 @@ jobs:
       - name: Run Market Intelligence Script
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}     
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }} 
         run: |
           python main.py
