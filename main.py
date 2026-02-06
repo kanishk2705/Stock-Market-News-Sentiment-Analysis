@@ -3,6 +3,7 @@ from fetch_data import fetch_portfolio_data
 from sentiment_engine import analyze_headline
 from database import init_db, save_log
 from alert_system import send_market_alert
+from datetime import datetime # <--- ADD THIS
 
 def run_market_intelligence():
     print("🚀 STARTING MARKET INTELLIGENCE SYSTEM (CLOUD EDITION)...\n")
@@ -26,10 +27,11 @@ def run_market_intelligence():
     enriched_data = []
 
     for item in raw_data:
-        ticker = item['Ticker']
-        headline = item['Headline']
+        ticker = item.get('Ticker') # Use .get() to be safe
+        headline = item.get('Headline')
         
-        if headline != "N/A" and headline != "Format Unknown":
+        # Analyze Sentiment
+        if headline and headline != "N/A" and headline != "Format Unknown":
             sentiment = analyze_headline(headline)
             label = sentiment['label']
             score = sentiment['score']
@@ -37,11 +39,20 @@ def run_market_intelligence():
             label = "neutral"
             score = 0.0
 
-        item['Sentiment'] = label
-        item['Confidence'] = score
-        enriched_data.append(item)
-        
         print(f"🤖 Analyzed {ticker}: {label.upper()} ({score:.2f})")
+
+        # --- CRITICAL FIX START ---
+        # Create a new, clean dictionary with LOWERCASE keys for the database
+        clean_record = {
+            "ticker": ticker,
+            "headline": headline,
+            "price": item.get('Price', 0), # Ensure Price exists
+            "sentiment": label,
+            "confidence": score,
+            "timestamp": datetime.now().isoformat() # <--- REQUIRED for app sorting
+        }
+        enriched_data.append(clean_record)
+        # --- CRITICAL FIX END ---
 
     # 4. SAVE TO CLOUD DATABASE
     print("\n--- 💾 PHASE 3: CLOUD PERSISTENCE ---")
@@ -54,9 +65,11 @@ def run_market_intelligence():
     # 6. DISPLAY SUMMARY
     print("\n--- 📊 FINAL MARKET REPORT ---")
     df = pd.DataFrame(enriched_data)
+    
     if not df.empty:
-        df['Signal'] = df.apply(lambda x: "🟢 BULLISH" if x['Sentiment'] == 'positive' and x['Confidence'] > 0.8 else ("🔴 BEARISH" if x['Sentiment'] == 'negative' else "⚪ NEUTRAL"), axis=1)
-        print(df[['Ticker', 'Price', 'Signal', 'Sentiment']].to_string(index=False))
+        df['signal'] = df.apply(lambda x: "🟢 BULLISH" if x['sentiment'] == 'positive' and x['confidence'] > 0.8 else ("🔴 BEARISH" if x['sentiment'] == 'negative' else "⚪ NEUTRAL"), axis=1)
+
+        print(df[['ticker', 'price', 'signal', 'sentiment']].to_string(index=False))
 
 if __name__ == "__main__":
     run_market_intelligence()

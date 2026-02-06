@@ -12,7 +12,7 @@ def predict_next_day_price(ticker, df):
     # If the robot has run for less than 5 days, we cannot predict yet.
     if len(df) < 5:
         return None, "Not Enough Data"
-
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
     # 2. PREPARE DATA
     # We create a copy to avoid messing up the original dashboard data
     df = df.sort_values(by='timestamp').copy()

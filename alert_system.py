@@ -21,7 +21,7 @@ def send_market_alert(data_list):
     # Rule: Sentiment is NEGATIVE AND Confidence > 0.7
     alerts = []
     for item in data_list:
-        if item['Sentiment'] == 'negative' and item['Confidence'] > 0.7:
+        if item['sentiment'] == 'negative' and item['confidence'] > 0.7:
             alerts.append(item)
     
     if not alerts:
@@ -54,10 +54,10 @@ def send_market_alert(data_list):
     for item in alerts:
         html_body += f"""
                 <tr>
-                    <td style="border: 1px solid black; padding: 8px;"><b>{item['Ticker']}</b></td>
-                    <td style="border: 1px solid black; padding: 8px;">{item['Price']}</td>
-                    <td style="border: 1px solid black; padding: 8px; color: red;">{item['Confidence']:.2f}</td>
-                    <td style="border: 1px solid black; padding: 8px;">{item['Headline']}</td>
+                    <td style="border: 1px solid black; padding: 8px;"><b>{item['ticker']}</b></td>
+                    <td style="border: 1px solid black; padding: 8px;">{item['price']}</td>
+                    <td style="border: 1px solid black; padding: 8px; color: red;">{item['confidence']:.2f}</td>
+                    <td style="border: 1px solid black; padding: 8px;">{item['headline']}</td>
                 </tr>
         """
     
