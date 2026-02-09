@@ -1,40 +1,33 @@
-name: Daily Market Sentiment Robot 🤖
+name: Run Market Intelligence
 
-# 1. TRIGGER: When does this run?
 on:
   schedule:
-    # Runs at 9:27 PM UTC every day
-    # (You can adjust this later using crontab.guru)
-    - cron: '27 21 * * 1-5'
-  # This enables the manual "Run Workflow" button for testing
-  workflow_dispatch:
+    - cron: '0 21 * * 1-5'  # Runs at 9:00 PM UTC every weekday
+  workflow_dispatch:      # Allows manual trigger button
 
 jobs:
-  run-market-intelligence:
+  run-script:
     runs-on: ubuntu-latest
 
     steps:
-      # Step A: Get your code
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step B: Install Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # Step C: Install libraries
       - name: Install Dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step D: Run the Brain
-      # We explicitly pass the SECRET into the environment
       - name: Run Market Intelligence Script
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}     
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }} 
-        run: |
-          python main.py
+        env:  # <--- THIS IS THE CRITICAL PART
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # Add email secrets here if you use them, otherwise remove these 2 lines:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python main.py
