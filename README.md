@@ -85,8 +85,8 @@ While the Core V1 system is complete, the following areas are targeted for V2:
 ## 🚀 Roadmap (V2.0 - The "Platform" Upgrade)
 
 - [x] **Bloomberg-Style Dashboard:** Upgrade UI to a "Card Grid" layout with live Market Indices (Nifty, Nasdaq).
-- [ ] **Historical Backfill:** Feature to fetch 5 years of past data for immediate deep learning training.
-- [ ] **Deep Learning Engine:** Replacing Linear Regression with **LSTM (Long Short-Term Memory)** networks.
+- [x] **Historical Backfill:** Feature to fetch 5 years of past data for immediate deep learning training.
+- [ ] **Deep Learning Engine:** Replacing Linear Regression with **Random Forest Regressor** and will update to **LSTM networks** in the near future.
 - [ ] **SaaS Architecture:** Implementing Multi-User Authentication and Row Level Security (RLS).
 - [ ] **Generative AI Analyst:** Integrating LLMs (Llama/GPT) to write text summaries of *why* a stock is moving.
 
