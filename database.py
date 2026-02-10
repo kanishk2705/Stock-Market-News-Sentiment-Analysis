@@ -89,8 +89,11 @@ def get_portfolio_summary():
 
         df = pd.DataFrame(data)
         
+        # --- THE FIX IS HERE ---
+        # We add format='mixed' so it handles both "Robot timestamps" and "Manual timestamps"
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed')
+        
         # Sort by time (newest first)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
         df = df.sort_values(by='timestamp', ascending=False)
         
         # Drop duplicates to keep only the LATEST row for each ticker
@@ -101,7 +104,6 @@ def get_portfolio_summary():
     except Exception as e:
         print(f"❌ Database Summary Error: {e}")
         return []
-
 
 def get_all_monitored_tickers():
     """
@@ -125,3 +127,82 @@ def init_db():
 
 def save_log(data):
     return insert_data(data)
+def fetch_price_history(ticker):
+    """
+    Fetches the 5-year OHLCV history from the 'price_history' table.
+    """
+    try:
+        # Fetch data sorted by time
+        response = supabase.table('price_history')\
+            .select("*")\
+            .eq('ticker', ticker)\
+            .order('timestamp', desc=False)\
+            .execute()
+            
+        data = response.data
+        if data:
+            return pd.DataFrame(data)
+        return pd.DataFrame()
+    except Exception as e:
+        print(f"❌ Price History Fetch Error: {e}")
+        return pd.DataFrame()
+def fetch_unified_data(ticker):
+    """
+    Stitches history and live data using Reverse Fetch (Newest First).
+    This guarantees we capture 2025/2026 data even if the row limit is hit.
+    """
+    try:
+        # 1. Define the Cut-Off Date
+        CUTOFF_DATE = pd.Timestamp("2026-01-27", tz='UTC')
+
+        # --- PART A: FETCH HISTORY (Newest -> Oldest) ---
+        # We use desc=True to get the most recent history (2025) first.
+        # We also add .limit(5000) just to be safe.
+        history_response = supabase.table('price_history')\
+            .select("*")\
+            .eq('ticker', ticker)\
+            .order('timestamp', desc=True)\
+            .limit(5000)\
+            .execute()
+        
+        history_df = pd.DataFrame(history_response.data) if history_response.data else pd.DataFrame()
+
+        if not history_df.empty:
+            if 'close' in history_df.columns:
+                history_df['price'] = history_df['close']
+            
+            # Standardize and Filter
+            history_df['timestamp'] = pd.to_datetime(history_df['timestamp'], utc=True, format='mixed')
+            history_df = history_df[history_df['timestamp'] < CUTOFF_DATE]
+            
+            history_df['sentiment'] = 'neutral'
+            history_df['confidence'] = 0.0
+
+        # --- PART B: FETCH ROBOT DATA (Newest -> Oldest) ---
+        live_response = supabase.table('market_log')\
+            .select("*")\
+            .eq('ticker', ticker)\
+            .order('timestamp', desc=True)\
+            .limit(5000)\
+            .execute()
+            
+        live_df = pd.DataFrame(live_response.data) if live_response.data else pd.DataFrame()
+
+        if not live_df.empty:
+            live_df['timestamp'] = pd.to_datetime(live_df['timestamp'], utc=True, format='mixed')
+            live_df = live_df[live_df['timestamp'] >= CUTOFF_DATE]
+
+        # --- PART C: STITCH AND RESORT ---
+        if history_df.empty and live_df.empty:
+            return pd.DataFrame()
+        
+        full_df = pd.concat([history_df, live_df], ignore_index=True)
+        
+        # CRITICAL: Re-sort to Oldest->Newest for the chart to draw correctly
+        full_df = full_df.sort_values('timestamp', ascending=True)
+        
+        return full_df
+
+    except Exception as e:
+        print(f"❌ Merge Error: {e}")
+        return pd.DataFrame()
