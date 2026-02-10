@@ -1,63 +1,65 @@
-import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from datetime import timedelta
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+
+def prepare_sliding_window(data, window_size=60):
+    """
+    Converts a list of prices into a supervised learning problem.
+    Input: [100, 101, 102, 103...]
+    X: [[100, 101, 102]], y: [103]
+    """
+    X, y = [], []
+    for i in range(len(data) - window_size):
+        X.append(data[i:i+window_size])
+        y.append(data[i+window_size])
+    return np.array(X), np.array(y)
 
 def predict_next_day_price(ticker, df):
     """
-    Trains a Linear Regression model on the stock's history to forecast the next price.
-    Returns: Predicted Price (float), Signal (Buy/Sell/Hold)
+    Uses Random Forest to predict the next price based on the last 60 days.
     """
-    # 1. SAFETY CHECK: We need history to predict the future.
-    # If the robot has run for less than 5 days, we cannot predict yet.
-    if len(df) < 5:
-        return None, "Not Enough Data"
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    # 2. PREPARE DATA
-    # We create a copy to avoid messing up the original dashboard data
-    df = df.sort_values(by='timestamp').copy()
-    
-    # Feature Engineering: Convert Date to "Day Number" (0, 1, 2, 3...)
-    df['Days'] = (df['timestamp'] - df['timestamp'].min()).dt.days
-    
-    # Feature Engineering: Combine Sentiment Label & Confidence into one score
-    # Positive (0.9) -> +0.9
-    # Negative (0.9) -> -0.9
-    # Neutral -> 0
-    sentiment_map = {'positive': 1, 'neutral': 0, 'negative': -1}
-    df['Sentiment_Score'] = df['sentiment'].map(sentiment_map) * df['confidence']
-    
-    # X (Inputs): Time and Sentiment
-    X = df[['Days', 'Sentiment_Score']].values
-    # y (Target): The Stock Price
-    y = df['price'].values
+    # 1. PREPARE DATA
+    if df.empty or 'price' not in df.columns:
+        return None, "Insufficient Data"
 
-    # 3. TRAIN MODEL (The "Learning" Step)
-    model = LinearRegression()
+    # Sort by date to ensure time order
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values('timestamp')
+    
+    # Extract just the prices
+    prices = df['price'].values
+    
+    # 2. CREATE FEATURES (Sliding Window)
+    WINDOW_SIZE = 60
+    
+    if len(prices) < WINDOW_SIZE + 10:
+        return None, "Need > 70 Days Data"
+
+    # X = Matrix of past 60 days, y = Target next day
+    X, y = prepare_sliding_window(prices, WINDOW_SIZE)
+
+    # 3. TRAIN RANDOM FOREST MODEL
+    # n_estimators=100 means we create 100 decision trees and average them
+    model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
     model.fit(X, y)
 
     # 4. PREDICT TOMORROW
-    # "Tomorrow" is the last day + 1
-    next_day_index = df['Days'].iloc[-1] + 1
+    # Get the very last 60 days from the dataset
+    last_window = prices[-WINDOW_SIZE:]
+    last_window = last_window.reshape(1, -1) # Reshape to be 2D array [1, 60]
     
-    # We assume tomorrow's news sentiment is similar to today's (Naive assumption for V1)
-    latest_sentiment = df['Sentiment_Score'].iloc[-1]
-    
-    # Ask the model: "Given it's Day X+1 and sentiment is Y, what is the price?"
-    prediction = model.predict([[next_day_index, latest_sentiment]])[0]
-    
+    predicted_price = model.predict(last_window)[0]
+
     # 5. GENERATE SIGNAL
-    current_price = df['price'].iloc[-1]
-    threshold = 0.02 # 2% movement threshold
+    current_price = prices[-1]
     
-    if prediction > current_price * (1 + threshold):
+    # Threshold: 1% change
+    if predicted_price > current_price * 1.01:
         signal = "🟢 STRONG BUY"
-    elif prediction < current_price * (1 - threshold):
+    elif predicted_price < current_price * 0.99:
         signal = "🔴 STRONG SELL"
     else:
         signal = "⚪ HOLD"
 
-    return prediction, signal
-
-if __name__ == "__main__":
-    print("Run this via main.py or app.py")
+    return float(predicted_price), signal
