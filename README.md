@@ -88,7 +88,7 @@ While the Core V1 system is complete, the following areas are targeted for V2:
 - [x] **Historical Backfill:** Feature to fetch 5 years of past data for immediate deep learning training.
 - [x] **Deep Learning Engine:** Replacing Linear Regression with **Random Forest Regressor** and will update to **LSTM networks** in the near future.
 - [ ] **SaaS Architecture:** Implementing Multi-User Authentication and Row Level Security (RLS).
-- [ ] **Generative AI Analyst:** Integrating LLMs (Llama/GPT) to write text summaries of *why* a stock is moving.
+- [x] **Generative AI Analyst:** Integrating LLMs (Llama/GPT) to write text summaries of *why* a stock is moving.
 
 ---
 
@@ -113,6 +113,7 @@ While the Core V1 system is complete, the following areas are targeted for V2:
     EMAIL_PASSWORD="your-app-password"
     SUPABASE_URL="your-project-url"
     SUPABASE_KEY="your-secret-key"
+    GROQ_API_KEY="your-api-key"
     ```
 
 4.  **Run the Dashboard**
