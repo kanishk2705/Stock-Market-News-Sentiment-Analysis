@@ -2,9 +2,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from database import get_latest_data, fetch_all_watchlist_data, get_portfolio_summary
+from database import get_latest_data, fetch_all_watchlist_data, get_portfolio_summary,fetch_price_history,fetch_unified_data
 from prediction_engine import predict_next_day_price
 from market_utils import get_market_indices
+from analysis_engine import calculate_technical_indicators, get_market_signal
+from ai_analyst import generate_market_briefing
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Market Sentinel Command Center", layout="wide")
@@ -83,79 +85,105 @@ else:
         
     st.markdown(f"## 🔎 Deep Dive Analysis: {selected_ticker}")
     
-    # --- FETCH DETAILED DATA ---
-    latest = get_latest_data(selected_ticker)
-    stock_data = fetch_all_watchlist_data(selected_ticker)
+   # --- 1. FETCH & ENRICH DATA ---
+    stock_data = fetch_unified_data(selected_ticker)
     
-    if not latest:
-        st.error("No data found for this ticker.")
+    if stock_data.empty:
+        st.error("No data found. Please run 'backfill_manager.py' first.")
     else:
-        # --- 1. PREDICTION MODULE (Phase 6) ---
-        predicted_price, signal = predict_next_day_price(selected_ticker, stock_data)
+        # 🔥 NEW: Calculate Technical Indicators
+        stock_data = calculate_technical_indicators(stock_data)
+        
+        # Get Latest Technical Signal
+        latest_tech_row = stock_data.iloc[-1]
+        tech_signal = get_market_signal(latest_tech_row)
 
-        # --- 2. METRICS ROW ---
+        # --- 2. PREDICTION MODULE ---
+        predicted_price, ai_signal = predict_next_day_price(selected_ticker, stock_data)
+             # --- 🔥 NEW: GENERATIVE AI BRIEFING ---
+        latest = get_latest_data(selected_ticker)
+        if latest:
+            with st.spinner(f"🤖 AI Analyst is reading the news for {selected_ticker}..."):
+    # Prepare the data packet for the AI
+                ai_context = {
+                    'price': latest['price'],
+                    'rsi': latest_tech_row['RSI'],
+                    'sentiment': latest['sentiment'],
+                    'headline': latest['headline'],
+                    'prediction': ai_signal if predicted_price else "Wait & See"
+                }
+
+        # Call Groq
+                briefing = generate_market_briefing(selected_ticker, ai_context)
+
+# Display the Briefing
+            st.markdown(f"""
+                <div style="background-color: #1E1E1E; padding: 15px; border-radius: 10px; border-left: 5px solid #00E676; margin-bottom: 20px;">
+                <h4 style="margin-top:0; color: #00E676;">🤖 AI Analyst Verdict</h4>
+                <p style="font-size: 1.1em; line-height: 1.6;">{briefing}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # --- 3. METRICS ROW ---
         c1, c2, c3, c4 = st.columns(4)
+                
+        c1.metric("Current Price", f"${latest['price']:,.2f}")
         
-        c1.metric("Current Price", f"{latest['price']:,.2f}")
-        
-        # Sentiment Styling
+        # Smart Sentiment Color
         sent_color = "normal"
         if latest['sentiment'] == 'positive': sent_color = "off"
         elif latest['sentiment'] == 'negative': sent_color = "inverse"
+        c2.metric("News Sentiment", latest['sentiment'].upper(), f"{latest['confidence']:.2f} conf", delta_color=sent_color)
         
-        c2.metric("AI Sentiment", latest['sentiment'].upper(), f"{latest['confidence']:.2f} conf", delta_color=sent_color)
-        c3.markdown(f"**Latest Headline:**\n_{latest['headline']}_")
+        # 🔥 NEW: Technical Signal Card
+        c3.metric("Technical Signal", "RSI: " + f"{latest_tech_row['RSI']:.0f}", tech_signal)
         
-        # Prediction Metric
         if predicted_price:
-            c4.metric("AI Forecast (24h)", f"{predicted_price:,.2f}", signal)
+            c4.metric("AI Forecast (24h)", f"${predicted_price:,.2f}", ai_signal)
         else:
-            c4.metric("AI Forecast", "Gathering Data...", "Need 5 Days History", delta_color="off")
+            c4.metric("AI Forecast", "Calculating...", "Need Data", delta_color="off")
 
-        # --- 3. CHARTING ---
-        st.subheader(f"📉 Price vs Sentiment Correlation")
-        fig = go.Figure()
+        # --- 4. THE PRO CHART (Price + SMA + RSI) ---
+        st.subheader(f"📉 Advanced Market Analysis")
         
-        # Line: Price
-        fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['price'], name="Price", line=dict(color='#2962FF', width=3)))
+        # Create a chart with 2 rows (Main Chart + RSI Panel)
+        from plotly.subplots import make_subplots
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                            vertical_spacing=0.03, row_heights=[0.7, 0.3])
         
-        # Dot: Prediction
+        # -- ROW 1: PRICE & SMAs --
+        # Main Price Line
+        fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['price'], 
+                                 name="Price", line=dict(color='#2962FF', width=2)), row=1, col=1)
+        
+        # SMA 50 (Yellow)
+        fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['SMA_50'], 
+                                 name="SMA 50", line=dict(color='#FFD700', width=1)), row=1, col=1)
+        
+        # SMA 200 (Purple)
+        fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['SMA_200'], 
+                                 name="SMA 200", line=dict(color='#9C27B0', width=1)), row=1, col=1)
+
+        # Prediction Dot
         if predicted_price:
-            last_time = stock_data['timestamp'].max()
+            last_time = pd.to_datetime(stock_data['timestamp'].iloc[-1])
             future_time = last_time + pd.Timedelta(days=1)
-            fig.add_trace(go.Scatter(
-                x=[last_time, future_time], 
-                y=[latest['price'], predicted_price],
-                name="AI Forecast",
-                line=dict(color='#FFD700', width=2, dash='dot'),
-                marker=dict(size=8, symbol='star')
-            ))
+            fig.add_trace(go.Scatter(x=[future_time], y=[predicted_price], name="AI Pred",
+                                     mode='markers', marker=dict(size=12, symbol='diamond', color='#00E676')), row=1, col=1)
 
-        # Bars: Sentiment
-        # Helper to visualize sentiment as positive/negative bars
-        def get_visual_score(row):
-            val = row['confidence']
-            return val if row['sentiment'] == 'positive' else -val if row['sentiment'] == 'negative' else 0
-
-        stock_data['visual_score'] = stock_data.apply(get_visual_score, axis=1)
+        # -- ROW 2: RSI INDICATOR --
+        # RSI Line
+        fig.add_trace(go.Scatter(x=stock_data['timestamp'], y=stock_data['RSI'], 
+                                 name="RSI", line=dict(color='#FF5252', width=1.5)), row=2, col=1)
         
-        fig.add_trace(go.Bar(
-            x=stock_data['timestamp'],
-            y=stock_data['visual_score'],
-            name="Sentiment Intensity",
-            yaxis="y2",
-            marker_color=stock_data['visual_score'].apply(lambda x: '#00C853' if x > 0 else '#D50000'),
-            opacity=0.4
-        ))
+        # RSI Bounds (70 and 30 lines)
+        fig.add_hline(y=70, line_dash="dot", line_color="gray", row=2, col=1)
+        fig.add_hline(y=30, line_dash="dot", line_color="gray", row=2, col=1)
 
-        fig.update_layout(
-            template="plotly_dark",
-            yaxis=dict(title="Stock Price"),
-            yaxis2=dict(title="Sentiment Score", overlaying="y", side="right", range=[-1.1, 1.1]),
-            hovermode="x unified",
-            legend=dict(orientation="h", y=1.1)
-        )
+        # Layout Polish
+        fig.update_layout(template="plotly_dark", height=600, hovermode="x unified", 
+                          legend=dict(orientation="h", y=1.02))
+        
         st.plotly_chart(fig, use_container_width=True)
-
         # --- 4. DATA TABLE ---
         st.dataframe(stock_data.sort_values(by='timestamp', ascending=False))
