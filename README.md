@@ -111,6 +111,8 @@ While the Core V1 system is complete, the following areas are targeted for V2:
     DATABASE_URL="postgresql://postgres.[USER]:[PASSWORD]@[aws-0-ap-south-1.pooler.supabase.com:6543/postgres](https://aws-0-ap-south-1.pooler.supabase.com:6543/postgres)"
     EMAIL_SENDER="your-email@gmail.com"
     EMAIL_PASSWORD="your-app-password"
+    SUPABASE_URL="your-project-url"
+    SUPABASE_KEY="your-secret-key"
     ```
 
 4.  **Run the Dashboard**
