@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client, Client
-
+import yfinance as yf
 # 1. LOAD SECRETS
 load_dotenv()
 
@@ -206,3 +206,102 @@ def fetch_unified_data(ticker):
     except Exception as e:
         print(f"❌ Merge Error: {e}")
         return pd.DataFrame()
+
+# --- AUTHENTICATION FUNCTIONS ---
+def sign_up_user(email, password):
+    """Creates a new user in Supabase Auth"""
+    try:
+        response = supabase.auth.sign_up({"email": email, "password": password})
+        return response
+    except Exception as e:
+        return None
+
+def sign_in_user(email, password):
+    """Logs in an existing user"""
+    try:
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return response
+    except Exception as e:
+        return None
+
+def logout_user():
+    supabase.auth.sign_out()
+
+# --- UPDATED WATCHLIST FUNCTIONS ---
+def get_user_watchlist(user_id):
+    """Fetches tickers ONLY for the specific user"""
+    try:
+        # RLS in Supabase will automatically filter this, 
+        # but filtering by column is a good double-check
+        response = supabase.table('watchlist').select("ticker").eq('user_id', user_id).execute()
+        return [row['ticker'] for row in response.data]
+    except Exception as e:
+        print(f"Error fetching watchlist: {e}")
+        return []
+
+def add_ticker_to_watchlist(ticker, user_id):
+    """Adds a ticker for a SPECIFIC user"""
+    try:
+        # Check if already exists for this user
+        existing = supabase.table('watchlist').select("*").eq('ticker', ticker).eq('user_id', user_id).execute()
+        if existing.data:
+            return False, "Already in your watchlist"
+            
+        supabase.table('watchlist').insert({"ticker": ticker, "user_id": user_id}).execute()
+        return True, "Added"
+    except Exception as e:
+        return False, str(e)
+
+def backfill_new_stock(ticker):
+    """
+    Downloads 1 year of history for a new stock and uploads it to Supabase.
+    """
+    print(f"⏳ Backfilling data for {ticker}...")
+    try:
+        # 1. Download Data
+        stock = yf.Ticker(ticker)
+        # Fetch 2 years to ensure we have enough for SMA-200
+        hist = stock.history(period="2y") 
+        
+        if hist.empty:
+            return False, "Ticker not found on Yahoo Finance."
+
+        # 2. Format Data for Supabase
+        records = []
+        hist.reset_index(inplace=True)
+        
+        for _, row in hist.iterrows():
+            record = {
+                'ticker': ticker,
+                'timestamp': row['Date'].isoformat(),
+                'open': row['Open'],
+                'high': row['High'],
+                'low': row['Low'],
+                'close': row['Close'],
+                'volume': row['Volume']
+            }
+            records.append(record)
+
+        # 3. Upload in Batches (Supabase has a limit per request)
+        # We assume 'price_history' is your table name
+        batch_size = 100
+        for i in range(0, len(records), batch_size):
+            batch = records[i:i + batch_size]
+            supabase.table('price_history').upsert(batch).execute()
+
+        # 4. Add a dummy entry to market_log so it shows up in the dashboard immediately
+        latest_price = records[-1]['close']
+        supabase.table('market_log').insert({
+            'ticker': ticker,
+            'timestamp': records[-1]['timestamp'],
+            'price': latest_price,
+            'headline': 'New Stock Added - Waiting for News...',
+            'sentiment': 'neutral',
+            'confidence': 0.0
+        }).execute()
+
+        return True, "Success"
+
+    except Exception as e:
+        print(f"❌ Backfill Error: {e}")
+        return False, str(e)
