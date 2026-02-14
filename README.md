@@ -87,8 +87,8 @@ While the Core V1 system is complete, the following areas are targeted for V2:
 - [x] **Bloomberg-Style Dashboard:** Upgrade UI to a "Card Grid" layout with live Market Indices (Nifty, Nasdaq).
 - [x] **Historical Backfill:** Feature to fetch 5 years of past data for immediate deep learning training.
 - [x] **Deep Learning Engine:** Replacing Linear Regression with **Random Forest Regressor** and will update to **LSTM networks** in the near future.
-- [ ] **SaaS Architecture:** Implementing Multi-User Authentication and Row Level Security (RLS).
-- [x] **Generative AI Analyst:** Integrating LLMs (Llama/GPT) to write text summaries of *why* a stock is moving.
+- [x] **SaaS Architecture:** Implementing Multi-User Authentication and Row Level Security (RLS).
+- [x] **Generative AI Analyst:** Integrating LLMs (Llama) to write text summaries of *why* a stock is moving.
 
 ---
 
