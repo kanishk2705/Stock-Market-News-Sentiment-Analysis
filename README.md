@@ -1,100 +1,86 @@
-# 🤖 Market Sentiment Intelligence System (V1.0)
+# 🤖 Market Sentinel: AI-Powered Financial SaaS (V2.0)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![FinBERT](https://img.shields.io/badge/AI-FinBERT-yellow?style=for-the-badge)
-![GitHub Actions](https://img.shields.io/badge/Automation-GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![Supabase](https://img.shields.io/badge/Backend-Supabase_&_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Llama 3](https://img.shields.io/badge/GenAI-Llama_3.3_(Groq)-orange?style=for-the-badge&logo=openai&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 
-**Project Duration:** Jan 2026 – Present  
-**Built By:** A C KANISHK  
+**Project Status:** 🟢 Active (V2.0 Enterprise)  
+**Architect:** A C KANISHK
 
-> **A Cloud-Native Financial Intelligence Platform that quantifies market sentiment using NLP, forecasts future price trends, and autonomously alerts users of critical risks.**
+> **A Multi-User Financial Intelligence Platform.**
+>
+> **Market Sentinel** is not just a dashboard; it is a **Full-Stack SaaS** that autonomously tracks global assets, secures user data with Row-Level Security (RLS), and employs **Generative AI** to write professional "Wall Street-style" briefings for every stock in your portfolio.
 
 ---
 
-## 📖 The Engineering Evolution
+## 📖 The Engineering Evolution (V1 ➡️ V2)
 
 ### 🔹 Phase 1: The Ingestion Layer (The "Body")
-**Goal:** Stop reading financial news manually by automating data collection.
-* **Challenge:** Financial data is scattered; APIs like Yahoo Finance have unstable, deep JSON structures.
-* **Solution:** Built a robust ETL script (`fetch_data.py`) with custom parsing logic to normalize multi-currency assets (₹ for NSE, $ for NYSE) dynamically.
+**Goal:** Automate the chaotic process of financial data collection.
+* **The Upgrade:** Moved beyond simple scraping. The system now features **"Auto-Onboarding"**: adding a new ticker (e.g., `NVDA`) triggers an immediate **2-year historical backfill** via `yfinance`, normalizing multi-currency data (₹/$) instantly.
 
-### 🔹 Phase 2: The Cognitive Layer (The "Brain")
-**Goal:** Convert financial text into quantitative insights.
-* **Challenge:** Generic sentiment models fail in finance (e.g., *"Cost cutting"* is positive for stocks but negative in general English).
-* **Solution:** Integrated **FinBERT**, a Transformer model pre-trained on financial texts.
-* **Result:** The system calculates a "Confidence Score" (0-1) for every headline to distinguish between weak rumors and strong market signals.
+### 🔹 Phase 2: The SaaS Architecture (The "Fortress") 🆕
+**Goal:** Transform a single-user tool into a secure, multi-tenant platform.
+* **Challenge:** How to let multiple users track different stocks without seeing each other's data?
+* **Solution:** Implemented **Supabase Authentication** with **Row Level Security (RLS)**.
+* **Impact:** The database acts as a firewall. User A cannot query User B’s watchlist, even if they try via API.
 
-### 🔹 Phase 3: The Persistence Layer (The "Memory")
-**Goal:** Eliminate data loss and enable historical analysis.
-* **Challenge:** Local scripts lose data when stopped. SQLite locks files during concurrent writes.
-* **Solution:** Migrated to a **Hosted Cloud Database (PostgreSQL via Supabase)**.
-* **Impact:** Supports concurrent users and keeps data safe 24/7.
+### 🔹 Phase 3: The Generative AI Analyst (The "Brain") 🆕
+**Goal:** Move from "Numbers" (RSI: 70) to "Meaning" ("The stock is overbought due to...").
+* **Solution:** Integrated **Llama 3.3 (70B)** via the **Groq LPU Engine** for sub-second inference.
+* **Feature:** The "Deep Dive" engine feeds technical indicators + news headlines into the LLM, which generates a concise, professional executive summary explaining *why* the market is moving.
 
-### 🔹 Phase 4: The Interface (The "Face")
-**Goal:** Make the system usable for non-technical users.
-* **Solution:** Developed an interactive **Streamlit Dashboard** (`app.py`).
-* **Features:** Dynamic User Profiles, Dual-Axis Plotly Charts (Price vs. Sentiment), and Real-Time Cloud Sync.
+### 🔹 Phase 4: The Global Search Engine (The "Eyes") 🆕
+**Goal:** Allow users to find any stock, not just US tech giants.
+* **Solution:** Reverse-engineered the **Yahoo Finance Type-Ahead API** to build a "Global Search" page.
+* **Impact:** Users can now search for over **100,000+ assets** across exchanges (NSE, BSE, NYSE, NASDAQ) and add them instantly.
 
-### 🔹 Phase 5: The Automation Layer (The "Heartbeat") ✅
-**Goal:** Remove the human bottleneck.
-* **Challenge:** The script only worked when I manually ran it.
-* **Solution:** Deployed a **"Cloud Robot"** using **GitHub Actions**.
-* **Impact:** The system now wakes up automatically every night (UTC), fetches global market data, runs the AI analysis, saves to the cloud, and shuts down—without zero human intervention.
-
-### 🔹 Phase 6: The Predictive Engine (The "Oracle") ✅
-**Goal:** Answer the question: *"Where is the price going tomorrow?"*
-* **Solution:** Implemented a **Linear Regression** model (`prediction_engine.py`) using `scikit-learn`.
-* **Logic:** It analyzes the correlation between "Time" and "Accumulated Sentiment" to forecast the next day's closing price.
-* **Status:** Operational (Requires >5 days of data to generate valid signals).
-
-### 🔹 Phase 7: The Alerting System (The "Voice") ✅
-**Goal:** Notify the user of critical risks without them checking the dashboard.
-* **Solution:** Built an SMTP-based **Email Notification Service** (`alert_system.py`).
-* **Logic:** The system filters for "High Confidence Negative Signals" (Sentiment=Negative AND Confidence > 0.8) and instantly emails a "Crisis Report" to the administrator.
+### 🔹 Phase 5: The Self-Healing Automaton (The "Heartbeat")
+**Goal:** Zero human maintenance.
+* **Solution:** A "Cloud Robot" (GitHub Actions) wakes up nightly to fetch fresh data.
+* **Resilience:** If data is missing (e.g., a holiday or API failure), the system detects the gap, logs the error, and attempts a self-correction or "force fetch" on the next run.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-| Component | Technology | Description |
+| Layer | Technology | Role |
 | :--- | :--- | :--- |
-| **Language** | Python 3.10 | Core logic and scripting |
-| **Frontend** | Streamlit | Interactive web dashboard |
-| **Database** | PostgreSQL (Supabase) | Cloud-hosted relational database |
-| **AI Model** | FinBERT (Hugging Face) | Financial Sentiment Analysis (NLP) |
-| **Forecasting** | Scikit-Learn | Linear Regression for Price Prediction |
-| **Automation** | GitHub Actions | CI/CD & Scheduled Cron Jobs |
-| **Alerts** | SMTP / Gmail API | Automated Risk Notifications |
+| **Frontend** | Streamlit | Responsive "Bloomberg Terminal" UI with Sidebar Nav |
+| **Backend** | Python 3.10 | Core business logic and data processing |
+| **Auth & DB** | Supabase (PostgreSQL) | Auth, Database, and Row Level Security (RLS) policies |
+| **Generative AI** | Groq API (Llama 3.3) | Generating natural language market briefings |
+| **Data Feed** | yfinance / Yahoo API | Real-time price, history, and global ticker search |
+| **DevOps** | GitHub Actions | Scheduled Cron Jobs for automated data pipelines |
+| **Visualization** | Plotly | Interactive, multi-layer financial charting |
 
 ---
 
-## ⚠️ Current Limitations (V1.0)
+## 📸 Key Features
 
-While the Core V1 system is complete, the following areas are targeted for V2:
-
-1.  **Linear Model Simplicity:** The current prediction engine uses Linear Regression, which is fast but misses complex non-linear market patterns. (Planned Upgrade: **LSTM/RNN**).
-2.  **Single-Tenant Alerts:** The alert system currently emails the admin only. It does not yet support multi-user routing.
-3.  **Cold Start:** The predictive engine requires at least 5 days of continuous data collection before it begins generating forecasts.
-4.  **No Historical Backfill:** The system only knows data from the day it was activated; it does not yet fetch the last 5 years of history.
+1.  **🔐 Secure Login:** Email/Password authentication with persistent sessions.
+2.  **🌍 Global Search:** Find stocks from India (NSE/BSE) to the US (NYSE) with auto-currency detection (₹/$).
+3.  **🤖 AI Verdict:** A "Smart Card" at the top of every analysis page tells you *exactly* what is happening in plain English.
+4.  **📉 Technical Deep Dive:** Interactive charts overlaying SMA-50, SMA-200, and RSI indicators.
+5.  **⚡ Instant Refresh:** Sidebar controls allow users to force-fetch the latest live data.
 
 ---
 
-## 🚀 Roadmap (V2.0 - The "Platform" Upgrade)
+## 🚀 Future Roadmap (V3.0)
 
-- [x] **Bloomberg-Style Dashboard:** Upgrade UI to a "Card Grid" layout with live Market Indices (Nifty, Nasdaq).
-- [x] **Historical Backfill:** Feature to fetch 5 years of past data for immediate deep learning training.
-- [x] **Deep Learning Engine:** Replacing Linear Regression with **Random Forest Regressor** and will update to **LSTM networks** in the near future.
-- [x] **SaaS Architecture:** Implementing Multi-User Authentication and Row Level Security (RLS).
-- [x] **Generative AI Analyst:** Integrating LLMs (Llama) to write text summaries of *why* a stock is moving.
+We are constantly pushing the boundaries of what this platform can do.
+
+- [ ] **Advanced Forecasting:** Upgrade the prediction engine from Random Forest to **LSTM (Long Short-Term Memory)** Neural Networks for capturing non-linear market patterns.
+- [ ] **Social Sentiment:** Expand the NLP engine to analyze **Reddit (r/wallstreetbets) and Twitter (X)** sentiment, not just news.
+- [ ] **Portfolio Optimization:** Add a module to suggest "Rebalancing" based on Sharpe Ratio calculations.
 
 ---
 
 ## ⚙️ How to Run Locally
 
-1.  **Clone the Repo**
+1.  **Clone the Repository**
     ```bash
     git clone [https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git](https://github.com/kanishk2705/Stock-Market-News-Sentiment-Analysis.git)
     cd Stock-Market-News-Sentiment-Analysis
@@ -105,20 +91,26 @@ While the Core V1 system is complete, the following areas are targeted for V2:
     pip install -r requirements.txt
     ```
 
-3.  **Configure Secrets**
-    Create a `.env` file in the root directory:
+3.  **Configure Environment Secrets**
+    Create a `.env` file in the root directory. You will need keys for the Database and the AI Engine.
     ```ini
-    DATABASE_URL="postgresql://postgres.[USER]:[PASSWORD]@[aws-0-ap-south-1.pooler.supabase.com:6543/postgres](https://aws-0-ap-south-1.pooler.supabase.com:6543/postgres)"
+    # Database & Auth
+    SUPABASE_URL="[https://your-project.supabase.co](https://your-project.supabase.co)"
+    SUPABASE_KEY="your-anon-key"
+    
+    # AI Engine
+    GROQ_API_KEY="gsk_..."
+    
+    # (Optional) For Admin Alerts
     EMAIL_SENDER="your-email@gmail.com"
     EMAIL_PASSWORD="your-app-password"
-    SUPABASE_URL="your-project-url"
-    SUPABASE_KEY="your-secret-key"
-    GROQ_API_KEY="your-api-key"
     ```
 
-4.  **Run the Dashboard**
+4.  **Launch the Platform**
     ```bash
     streamlit run app.py
     ```
 
 ---
+
+> *"The goal is not just to see the data, but to understand the story behind it."* — **Market Sentinel V2**
