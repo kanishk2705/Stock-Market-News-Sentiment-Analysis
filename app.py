@@ -273,7 +273,7 @@ elif st.session_state['page'] == "Dashboard":
             c3.metric("Technical Signal", "RSI: " + f"{latest_tech_row['RSI']:.0f}", tech_signal)
             
             if predicted_price:
-                c4.metric("AI Forecast (24h)", f"${predicted_price:,.2f}", ai_signal)
+                c4.metric("AI Forecast (24h)", f"{currency_symbol}{predicted_price:,.2f}", ai_signal)
             else:
                 c4.metric("AI Forecast", "Calculating...", "Need Data", delta_color="off")
 
