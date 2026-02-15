@@ -24,6 +24,7 @@ def generate_market_briefing(ticker, data_context):
 
     # Unpack the context
     price = data_context.get('price', 0)
+    currency = data_context.get('currency', '$')
     rsi = data_context.get('rsi', 50)
     sentiment = data_context.get('sentiment', 'neutral')
     headline = data_context.get('headline', 'No major news.')
@@ -35,7 +36,7 @@ def generate_market_briefing(ticker, data_context):
     Write a clear, concise 3-sentence executive summary for {ticker}.
     
     Data Snapshot:
-    - Current Price: ${price:.2f}
+    - Current Price: {currency}{price:.2f}
     - Technical Signal: RSI is {rsi:.0f} (Note: >70 is Overbought, <30 is Oversold).
     - News Sentiment: {sentiment.upper()} based on headline: "{headline}"
     - AI Forecast: {prediction}
