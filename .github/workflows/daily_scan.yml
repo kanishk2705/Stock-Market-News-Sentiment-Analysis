@@ -1,0 +1,63 @@
+name: Run Market Intelligence
+
+on:
+  schedule:
+    - cron: '0 21 * * 1-5'  # Runs at 9:00 PM UTC every weekday (after the US close)
+  workflow_dispatch:        # Allows manual trigger button
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-pipeline.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install pytest
+
+      - name: Run Unit Tests
+        run: pytest -q
+
+  scan:
+    # Only the nightly schedule / manual button touches the real database
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-pipeline.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run Market Intelligence Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # The robot reads every user's watchlist, so it needs the service-role key (bypasses RLS)
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          # Public demo login shown on the app's login screen (intentionally not secret); reset every run
+          DEMO_EMAIL: demo@example.com
+          DEMO_PASSWORD: SentinelDemo2026
+          # Optional: e-mail alerts
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python main.py
